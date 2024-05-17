@@ -45,22 +45,7 @@ bot.onText(/\/añadircliente (\w+) (\w+) (\d+)/, (msg, match) => {
 });
 
 // Comando /quitarcliente
-// bot.onText(/\/quitarcliente (\w+)/, (msg, match) => {
-//   const chatId = msg.chat.id;
-//   const nombre = match[1];
 
-//   const query = 'DELETE FROM clientes WHERE nombre = ?';
-//   connection.query(query, [nombre], (err, results) => {
-//     if (err) {
-//       bot.sendMessage(chatId, 'Error quitando cliente.');
-//       console.error(err);
-//     } else {
-//       bot.sendMessage(chatId, `Cliente quitado: ${nombre}`);
-//     }
-//   });
-
-  
-// });
 // Comando /quitarcliente
 bot.onText(/\/quitarcliente (\w+) (\w+)/, (msg, match) => {
     const chatId = msg.chat.id;
