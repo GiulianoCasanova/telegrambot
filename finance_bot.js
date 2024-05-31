@@ -7,10 +7,10 @@ const bot = new TelegramBot(token, { polling: true });
 
 // Configuración de la base de datos
 const connection = mysql.createConnection({
-  host: 'sql10.freesqldatabase.com',
-  user: 'sql10707115',
-  password: 'qzhQMYzyqg',
-  database: 'sql10707115'
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'finance_bot'
 });
 
 connection.connect((err) => {
