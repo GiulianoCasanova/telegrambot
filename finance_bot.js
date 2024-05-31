@@ -22,9 +22,18 @@ connection.connect((err) => {
 });
 
 // Comando /start
+// bot.onText(/\/start/, (msg) => {
+//   bot.sendMessage(msg.chat.id, '¡Hola! Soy tu bot de finanzas. Usa /añadircliente <nombre> <apellido> <edad> o /quitarcliente <nombre> <apellido> o /listarclientes para gestionar tus clientes.');
+// });
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, '¡Hola! Soy tu bot de finanzas. Usa /añadircliente <nombre> <apellido> <edad> o /quitarcliente <nombre> <apellido> o /listarclientes para gestionar tus clientes.');
-});
+
+  bot.sendMessage(msg.chat.id, "¡Hola! Soy tu bot de finanzas. Usa /añadircliente <nombre> <apellido> <edad> o /quitarcliente <nombre> <apellido> o /listarclientes para gestionar tus clientes.", {
+  "reply_markup": {
+      "keyboard": [["/añadircliente"],["/quitarcliente"], ["/listarclientes"]]
+      }
+  });
+  
+  });
 
 // Comando /añadircliente
 bot.onText(/\/añadircliente (\w+) (\w+) (\d+)/, (msg, match) => {
@@ -45,39 +54,56 @@ bot.onText(/\/añadircliente (\w+) (\w+) (\d+)/, (msg, match) => {
 });
 
 // Comando /quitarcliente
-
-// Comando /quitarcliente
 bot.onText(/\/quitarcliente (\w+) (\w+)/, (msg, match) => {
-    const chatId = msg.chat.id;
-    const nombre = match[1];
-    const apellido = match[2];
-  
-    const query = 'DELETE FROM clientes WHERE nombre = ? AND apellido = ?';
-    connection.query(query, [nombre, apellido], (err, results) => {
-      if (err) {
-        bot.sendMessage(chatId, 'Error quitando cliente.');
-        console.error(err);
-      } else {
-        bot.sendMessage(chatId, `Cliente quitado: ${nombre} ${apellido}`);
-      }
-    });
+  const chatId = msg.chat.id;
+  const nombre = match[1];
+  const apellido = match[2];
+
+  const query = 'DELETE FROM clientes WHERE nombre = ? AND apellido = ?';
+  connection.query(query, [nombre, apellido], (err, results) => {
+    if (err) {
+      bot.sendMessage(chatId, 'Error quitando cliente.');
+      console.error(err);
+    } else {
+      bot.sendMessage(chatId, `Cliente quitado: ${nombre} ${apellido}`);
+    }
   });
-  
+});
+
 // Comando /listarclientes
 bot.onText(/\/listarclientes/, (msg) => {
-    const chatId = msg.chat.id;
-  
-    const query = 'SELECT * FROM clientes';
-    connection.query(query, (err, results) => {
-      if (err) {
-        bot.sendMessage(chatId, 'Error recuperando la lista de clientes.');
-        console.error(err);
-      } else {
-        let message = 'Lista de clientes:\n';
-        results.forEach((cliente) => {
-          message += `- ${cliente.nombre} ${cliente.apellido}, Edad: ${cliente.edad}\n`;
-        });
-        bot.sendMessage(chatId, message);
-      }
-    });
+  const chatId = msg.chat.id;
+
+  const query = 'SELECT * FROM clientes';
+  connection.query(query, (err, results) => {
+    if (err) {
+      bot.sendMessage(chatId, 'Error recuperando la lista de clientes.');
+      console.error(err);
+    } else {
+      let message = 'Lista de clientes:\n';
+      results.forEach((cliente) => {
+        message += `- ${cliente.nombre} ${cliente.apellido}, Edad: ${cliente.edad}, Fecha: ${cliente.fecha}, Hora: ${cliente.hora}\n`;
+      });
+      bot.sendMessage(chatId, message);
+    }
+  });
+});
+
+bot.onText(/getLocation/, (msg) => {
+  const opts = {
+    reply_markup: JSON.stringify({
+      keyboard: [
+        [{text: 'Location', request_location: true}],
+        [{text: 'Contact', request_contact: true}],
+      ],
+      resize_keyboard: true,
+      one_time_keyboard: true,
+    }),
+  };
+  bot.sendMessage(msg.chat.id, 'Contact and Location request', opts);
+});
+
+bot.on('location', (msg) => {
+  console.log(msg.location.latitude);
+  console.log(msg.location.longitude);
 });
