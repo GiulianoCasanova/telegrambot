@@ -41,14 +41,15 @@ bot.onText(/\/añadircliente (\w+) (\w+) (\d+)/, (msg, match) => {
   const nombre = match[1];
   const apellido = match[2];
   const edad = parseInt(match[3]);
+  const Id = msg.from.id;
 
-  const query = 'INSERT INTO clientes (nombre, apellido, edad) VALUES (?, ?, ?)';
-  connection.query(query, [nombre, apellido, edad], (err, results) => {
+  const query = 'INSERT INTO clientes (nombre, apellido, edad, id) VALUES (?, ?, ?, ?)';
+  connection.query(query, [nombre, apellido, edad, Id], (err, results) => {
     if (err) {
       bot.sendMessage(chatId, 'Error añadiendo cliente.');
       console.error(err);
     } else {
-      bot.sendMessage(chatId, `Cliente añadido: ${nombre} ${apellido}, Edad: ${edad}`);
+      bot.sendMessage(chatId, `Cliente añadido: ${nombre} ${apellido}, Edad: ${edad}, Id: ${Id}`);
     }
   });
 });
@@ -107,3 +108,9 @@ bot.on('location', (msg) => {
   console.log(msg.location.latitude);
   console.log(msg.location.longitude);
 });
+
+bot.onText(/\/getId/, (msg) => {
+  const chatId = msg.chat.id;
+  const myId = msg.from.id;
+  bot.sendMessage(chatId, "Tu id es: " + myId);
+})
