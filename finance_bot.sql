@@ -8,3 +8,29 @@ CREATE TABLE IF NOT EXISTS clientes (
     edad INT NOT NULL,
     id INT PRIMARY KEY
 );
+
+-- create table if not exists gastos(
+--     idchat INT NOT NULL,
+--     iduser INT NOT NULL,
+--     idgasto INT AUTO_INCREMENT PRIMARY KEY,
+--     idgrupo_gasto INT,
+--     monto float NOT NULL,
+--     gasto_saldado boolean,
+--     constraint fk_gastos foreign KEY(idgrupo_gasto) references MasterGrupoGastos(idgrupo_gasto)
+-- );
+
+-- -- create table if not exists MasterGrupoGastos(
+-- --     idgrupo_gasto int AUTO_INCREMENT PRIMARY KEY,
+-- --     idgrupo_usuario int,
+--        iduser int,
+-- --     nombre_grupo VARCHAR(50),
+-- --     fecha_inicio date,
+-- --     gasto_cerrado boolean,
+-- --     constraint fk_GrupoGastos foreign KEY(idgrupo_usuario) references MasterGrupoUser(idgrupo_usuario)
+-- -- );
+
+-- create table if not exists MasterGrupoUser (
+--     idgrupo_usuario int AUTO_INCREMENT PRIMARY KEY,
+--     idusuario_part int,
+--     nombre_usuario varchar(60)
+-- );
