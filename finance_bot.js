@@ -22,16 +22,57 @@ connection.connect((err) => {
 });
 
 // Comando /start
+// Comando /start
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, "¡Hola! Soy tu bot de finanzas. Usa /añadirgasto <nombreGrupoGasto> <monto> o /quitargasto <idgasto> o /listargastos para gestionar tus gastos.", {
-    "reply_markup": {
-      "keyboard": [["/añadirgasto"], ["/quitargasto"], ["/listargastos"]]
+  const chatId = msg.chat.id;
+  const inlineKeyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: 'Añadir Gasto', callback_data: 'add_expense' }],
+        [{ text: 'Quitar Gasto', callback_data: 'remove_expense' }],
+        [{ text: 'Listar Gastos', callback_data: 'list_expenses' }]
+      ]
     }
-  });
+  };
+  bot.sendMessage(chatId, 'Bienvenido! Selecciona una opción:', inlineKeyboard);
 });
+
+// Manejo de callback_query
+// Manejo de callback_query
+bot.on('callback_query', (callbackQuery) => {
+  const message = callbackQuery.message;
+  const chatId = message.chat.id;
+  const data = callbackQuery.data;
+
+  if (data === 'add_expense') {
+    bot.sendMessage(chatId, 'Has seleccionado "Añadir Gasto". Por favor, ingresa los detalles del gasto.');
+    bot.once('message', (msg) => {
+      const match = msg.text.match(/(\w+) (\d+(\.\d{1,2})?)/);
+      if (match) {
+        añadirgasto(msg, match);
+      } else {
+        bot.sendMessage(chatId, 'Formato incorrecto. Por favor, usa el formato: NombreGrupo Monto');
+      }
+    });
+  } else if (data === 'remove_expense') {
+    bot.sendMessage(chatId, 'Has seleccionado "Quitar Gasto".');
+    quitargasto(message);
+  } else if (data === 'list_expenses') {
+    bot.sendMessage(chatId, 'Has seleccionado "Listar Gastos".');
+    listarGastos(message);
+  }
+  // Responder al callback para evitar que el botón quede en espera
+  bot.answerCallbackQuery(callbackQuery.id);
+});
+
+
 
 // Comando /añadirgasto
 bot.onText(/\/añadirgasto (\w+) (\d+(\.\d{1,2})?)/, (msg, match) => {
+  añadirgasto(msg, match);
+});
+
+function añadirgasto(msg, match){
   const chatId = msg.chat.id;
   const iduser = msg.from.id;
   const nombre_grupo = match[1];
@@ -58,11 +99,15 @@ bot.onText(/\/añadirgasto (\w+) (\d+(\.\d{1,2})?)/, (msg, match) => {
       });
     }
   });
-});
+}
 
 // Comando /quitargasto
 // Comando /quitargasto
 bot.onText(/\/quitargasto/, (msg) => {
+  quitargasto(msg);
+});
+
+function quitargasto(msg){
   const chatId = msg.chat.id;
   const query = 'SELECT nombre_grupo, idgrupo_gasto FROM MasterGrupoGastos WHERE idchat = ?';
 
@@ -72,18 +117,15 @@ bot.onText(/\/quitargasto/, (msg) => {
       console.error(err);
     } else {
       if (results.length > 0) {
-        let message = 'Selecciona un grupo de gastos enviando el ID correspondiente:\n';
+        let message = 'Escribe el ID del grupo de gastos que deseas eliminar,o escribe "especifico" para eliminar un gasto específico dentro de un grupo.\n';
         results.forEach((grupo) => {
           message += `ID: ${grupo.idgrupo_gasto}, Nombre: ${grupo.nombre_grupo}\n`;
         });
-        message += '\nEscribe el ID del grupo de gastos que deseas eliminar, o escribe "especifico" para eliminar un gasto específico dentro de un grupo.';
         bot.sendMessage(chatId, message);
-
         bot.once('message', (msg) => {
           const text = msg.text.trim().toLowerCase();
           if (text === 'especifico') {
             bot.sendMessage(chatId, 'Escribe el ID del grupo de gastos del que deseas eliminar un gasto específico:');
-            
             bot.once('message', (msg) => {
               const idgrupo_gasto = parseInt(msg.text);
               if (!isNaN(idgrupo_gasto)) {
@@ -99,7 +141,6 @@ bot.onText(/\/quitargasto/, (msg) => {
                         message += `ID: ${gasto.idgasto}, Monto: ${gasto.monto}\n`;
                       });
                       bot.sendMessage(chatId, message);
-
                       bot.once('message', (msg) => {
                         const idgasto = parseInt(msg.text);
                         if (!isNaN(idgasto)) {
@@ -155,14 +196,16 @@ bot.onText(/\/quitargasto/, (msg) => {
       }
     }
   });
-});
-
+}
 
 // Comando /listargastos
 bot.onText(/\/listargastos/, (msg) => {
+  listarGastos(msg);
+});
+
+function listarGastos(msg){
   const chatId = msg.chat.id;
   const query = 'SELECT nombre_grupo, idgrupo_gasto FROM MasterGrupoGastos WHERE idchat = ?';
-
   connection.query(query, [chatId], (err, results) => {
     if (err) {
       bot.sendMessage(chatId, 'Error recuperando la lista de grupos de gastos.');
@@ -171,7 +214,7 @@ bot.onText(/\/listargastos/, (msg) => {
       if (results.length > 0) {
         let message = 'Selecciona un grupo de gastos enviando el ID correspondiente:\n';
         results.forEach((grupo) => {
-          message += `ID: ${grupo.idgrupo_gasto}, Nombre: ${grupo.nombre_grupo}\n`;
+          message += `IDgrupo: ${grupo.idgrupo_gasto}, NombreGrupo: ${grupo.nombre_grupo}\n`;
         });
         bot.sendMessage(chatId, message);
 
@@ -204,4 +247,4 @@ bot.onText(/\/listargastos/, (msg) => {
       }
     }
   });
-});
+}
