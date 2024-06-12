@@ -22,95 +22,81 @@ connection.connect((err) => {
 });
 
 // Comando /start
-// bot.onText(/\/start/, (msg) => {
-//   bot.sendMessage(msg.chat.id, '¡Hola! Soy tu bot de finanzas. Usa /añadircliente <nombre> <apellido> <edad> o /quitarcliente <nombre> <apellido> o /listarclientes para gestionar tus clientes.');
-// });
 bot.onText(/\/start/, (msg) => {
-
-  bot.sendMessage(msg.chat.id, "¡Hola! Soy tu bot de finanzas. Usa /añadircliente <nombre> <apellido> <edad> o /quitarcliente <nombre> <apellido> o /listarclientes para gestionar tus clientes.", {
-  "reply_markup": {
-      "keyboard": [["/añadircliente"],["/quitarcliente"], ["/listarclientes"]]
-      }
-  });
-  
-  });
-
-// Comando /añadircliente
-bot.onText(/\/añadircliente (\w+) (\w+) (\d+)/, (msg, match) => {
-  const chatId = msg.chat.id;
-  const nombre = match[1];
-  const apellido = match[2];
-  const edad = parseInt(match[3]);
-  const Id = msg.from.id;
-
-  const query = 'INSERT INTO clientes (nombre, apellido, edad, id) VALUES (?, ?, ?, ?)';
-  connection.query(query, [nombre, apellido, edad, Id], (err, results) => {
-    if (err) {
-      bot.sendMessage(chatId, 'Error añadiendo cliente.');
-      console.error(err);
-    } else {
-      bot.sendMessage(chatId, `Cliente añadido: ${nombre} ${apellido}, Edad: ${edad}, Id: ${Id}`);
+  bot.sendMessage(msg.chat.id, "¡Hola! Soy tu bot de finanzas. Usa /añadirgasto <monto> <idgrupo_gasto> o /quitargasto <idgasto> o /listargastos para gestionar tus gastos.", {
+    "reply_markup": {
+      "keyboard": [["/añadirgasto"], ["/quitargasto"], ["/listargastos"]]
     }
   });
 });
 
-// Comando /quitarcliente
-bot.onText(/\/quitarcliente (\w+) (\w+)/, (msg, match) => {
+// Comando /añadirgasto
+bot.onText(/\/añadirgasto (\w+) (\d+(\.\d{1,2})?)/, (msg, match) => {
   const chatId = msg.chat.id;
-  const nombre = match[1];
-  const apellido = match[2];
+  const iduser = msg.from.id;
+  const nombre_grupo = match[1];
+  const monto = parseFloat(match[2]);
 
-  const query = 'DELETE FROM clientes WHERE nombre = ? AND apellido = ?';
-  connection.query(query, [nombre, apellido], (err, results) => {
+  // Primero, insertar el grupo de gasto
+  const queryGrupo = 'INSERT INTO MasterGrupoGastos (iduser, nombre_grupo, fecha_inicio, gasto_cerrado) VALUES ( ?, ?, CURDATE(), ?)';
+  connection.query(queryGrupo, [iduser, nombre_grupo, false], (err, results) => {
     if (err) {
-      bot.sendMessage(chatId, 'Error quitando cliente.');
+      bot.sendMessage(chatId, 'Error añadiendo el grupo de gasto.');
       console.error(err);
     } else {
-      bot.sendMessage(chatId, `Cliente quitado: ${nombre} ${apellido}`);
-    }
-  });
-});
+      const idgrupo_gasto = results.insertId; // Obtener el id del grupo de gasto recién creado
 
-// Comando /listarclientes
-bot.onText(/\/listarclientes/, (msg) => {
-  const chatId = msg.chat.id;
-
-  const query = 'SELECT * FROM clientes';
-  connection.query(query, (err, results) => {
-    if (err) {
-      bot.sendMessage(chatId, 'Error recuperando la lista de clientes.');
-      console.error(err);
-    } else {
-      let message = 'Lista de clientes:\n';
-      results.forEach((cliente) => {
-        message += `- ${cliente.nombre} ${cliente.apellido}, Edad: ${cliente.edad}, Fecha: ${cliente.fecha}, Hora: ${cliente.hora}\n`;
+      // Segundo, insertar el gasto usando el idgrupo_gasto
+      const queryGasto = 'INSERT INTO gastos (idchat, iduser, idgrupo_gasto, monto, gasto_saldado) VALUES (?, ?, ?, ?, ?)';
+      connection.query(queryGasto, [chatId, iduser, idgrupo_gasto, monto, false], (err, results) => {
+        if (err) {
+          bot.sendMessage(chatId, 'Error añadiendo gasto.');
+          console.error(err);
+        } else {
+          bot.sendMessage(chatId, `Gasto añadido: Monto ${monto}, Grupo: ${nombre_grupo},ChatId: ${chatId}, idUser: ${iduser}`);
+        }
       });
-      bot.sendMessage(chatId, message);
+    }
+  });
+});
+// Comando /quitargasto
+bot.onText(/\/quitargasto (\d+)/, (msg, match) => {
+  const chatId = msg.chat.id;
+  const idgasto = parseInt(match[1]);
+
+  const query = 'DELETE FROM gastos WHERE idgasto = ?';
+  connection.query(query, [idgasto], (err, results) => {
+    if (err) {
+      bot.sendMessage(chatId, 'Error quitando gasto.');
+      console.error(err);
+    } else {
+      bot.sendMessage(chatId, `Gasto quitado: Id ${idgasto}`);
     }
   });
 });
 
-bot.onText(/getLocation/, (msg) => {
-  const opts = {
-    reply_markup: JSON.stringify({
-      keyboard: [
-        [{text: 'Location', request_location: true}],
-        [{text: 'Contact', request_contact: true}],
-      ],
-      resize_keyboard: true,
-      one_time_keyboard: true,
-    }),
-  };
-  bot.sendMessage(msg.chat.id, 'Contact and Location request', opts);
-});
-
-bot.on('location', (msg) => {
-  console.log(msg.location.latitude);
-  console.log(msg.location.longitude);
-});
-
-bot.onText(/\/getId/, (msg) => {
+// Comando /listargastos
+// ListarGastos partiendo del MasterGrupoGastos y que segun que seleccione el usuario,
+// listar los datos segun el id del grupo gasto
+bot.onText(/\/listargastos/, (msg) => {
   const chatId = msg.chat.id;
-  const myId = msg.from.id;
-  bot.sendMessage(chatId, "Tu id es: " + myId);
-})
+  // const queryNombre = 'SELECT nombre_grupo FROM MasterGrupoGastos as m WHERE '
+  const query = 'SELECT * FROM gastos WHERE idchat = ?';
+  connection.query(query, [chatId], (err, results) => {
+    if (err) {
+      bot.sendMessage(chatId, 'Error recuperando la lista de gastos.');
+      console.error(err);
+    } else {
+      console.log(results);
+      if (results.length > 0) {
+        let message = 'Lista de gastos:\n';
+        results.forEach((gasto) => {
+          message += `- Id: ${gasto.idgasto}, Monto: ${gasto.monto}, Id del grupo de gasto: ${gasto.nombre_grupo}, Saldado: ${gasto.gasto_saldado}\n`;
+        });
+        bot.sendMessage(chatId, message);
+      } else {
+        bot.sendMessage(chatId, `no hay gastos registrados ${chatId}`)
+      }
+    }
+  });
+});
