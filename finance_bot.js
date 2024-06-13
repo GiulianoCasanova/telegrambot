@@ -1,6 +1,5 @@
-const TelegramBot = require('node-telegram-bot-api');
+const TelegramBot = require('node-telegram-bot-api',);
 const mysql = require('mysql2');
-
 // Configuración del bot de Telegram
 const token = '6789802815:AAHhRFdjH0Mz6blnt8WUbV0xCRHS6SgtPWg';
 const bot = new TelegramBot(token, { polling: true });
@@ -52,6 +51,15 @@ bot.on('callback_query', (callbackQuery) => {
         añadirgasto(msg, match);
       } else {
         bot.sendMessage(chatId, 'Formato incorrecto. Por favor, usa el formato: NombreGrupo Monto');
+        bot.once('message', (msg) => {
+          const match = msg.text.match(/(\w+) (\d+(\.\d{1,2})?)/);
+          if (match) {
+            añadirgasto(msg, match);
+          } else {
+            bot.sendMessage(chatId, 'Formato incorrecto. Por favor, Vuelve a intentarlo mas tarde');
+            
+          }
+        });
       }
     });
   } else if (data === 'remove_expense') {
@@ -117,11 +125,18 @@ function quitargasto(msg){
       console.error(err);
     } else {
       if (results.length > 0) {
+        const inlineKeyboard2 = {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: 'Especifico', callback_data : "especifico"}],
+            ]
+          }
+        };
         let message = 'Escribe el ID del grupo de gastos que deseas eliminar,o escribe "especifico" para eliminar un gasto específico dentro de un grupo.\n';
         results.forEach((grupo) => {
           message += `ID: ${grupo.idgrupo_gasto}, Nombre: ${grupo.nombre_grupo}\n`;
         });
-        bot.sendMessage(chatId, message);
+        bot.sendMessage(chatId, message,inlineKeyboard2);
         bot.once('message', (msg) => {
           const text = msg.text.trim().toLowerCase();
           if (text === 'especifico') {
@@ -248,3 +263,23 @@ function listarGastos(msg){
     }
   });
 }
+
+bot.onText(/^\/commands/, (msg) => {
+  bot.getMyCommands().then(function (info) {
+      console.log(info)
+  });
+});
+
+bot.onText(/^\/setcommand/, (msg) => {
+
+  const opts = [
+      { command: 'start', description: 'main menu' },
+      { command: 'anadirgasto', description: 'Command for run' },
+      { command: 'quitargasto', description: 'Command for run' },
+      { command: 'listargastos', description: 'Command for run' },
+  ];
+
+  bot.setMyCommands(opts).then(function (info) {
+      console.log(info)
+  });;
+});
